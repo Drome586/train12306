@@ -131,7 +131,7 @@ public class SkTokenService {
                 return false;
             }
         }
-        //优化令牌锁。
+        //优化令牌锁。用缓存来判断。k v令牌数量
         String skTokenCountKey = RedisKeyPreEnum.SK_TOKEN_COUNT + DateUtil.formatDate(date) + "-" + trainCode;
         Object skTokenCount = redisTemplate.opsForValue().get(skTokenCountKey);
         if (skTokenCount != null) {
@@ -142,6 +142,7 @@ public class SkTokenService {
                 return false;
             } else {
                 LOG.info("获取令牌后，令牌余数:{}", count);
+                //刷新锁的过期时间，避免令牌太快，又要去走上面那段
                 redisTemplate.expire(skTokenCountKey, 60, TimeUnit.SECONDS);
                 //每获取5个令牌更新一次数据库
                 if (count % 5 == 0) {
@@ -170,7 +171,7 @@ public class SkTokenService {
             skToken.setCount(count);
             LOG.info("将该车次的令牌大闸放入缓存中，key:{},count：{}", skTokenCountKey, count);
             // 不需要更新数据库，放入缓存，在上面统一更新
-            redisTemplate.opsForValue().setIfAbsent(skTokenCountKey, String.valueOf(count), 60, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set(skTokenCountKey, String.valueOf(count), 60, TimeUnit.SECONDS);
 //            skTokenMapper.updateByPrimaryKey(skToken);
             return true;
         }
