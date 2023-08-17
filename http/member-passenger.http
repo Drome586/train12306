@@ -10,14 +10,14 @@ token: {{token}}
 
 ###
 
-GET http://localhost:8000/member/passenger/query-list?page=2&size=2
+GET http://localhost:8000/member/passenger/query-list?page=1&size=2
 Accept: application/json
 token: {{token}}
 
 ###
 
 
-DELETE http://localhost:8000/member/passenger/delete/1682665159111348224
+DELETE http://localhost:8000/member/passenger/delete/1690639839713693696
 Accept: application/json
 token: {{token}}
 

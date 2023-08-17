@@ -3,7 +3,7 @@ package com.fanko.train.common.context;
 import com.fanko.train.common.resp.MemberLoginResp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+//线程本地变量，每一个线程进来时会获取用户的信息。
 public class LoginMemberContext {
     private static final Logger LOG = LoggerFactory.getLogger(LoginMemberContext.class);
 

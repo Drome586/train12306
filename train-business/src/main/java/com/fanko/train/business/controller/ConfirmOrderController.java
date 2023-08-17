@@ -59,7 +59,7 @@ public class ConfirmOrderController {
         Long id = beforeConfirmOrderService.beforeDoConfirm(req);
         return new CommonResp<>(String.valueOf(id));
     }
-
+    //查排队第几名
     @GetMapping("/query-line-count/{id}")
     public CommonResp<Integer> queryLineCount(@PathVariable Long id){
         Integer count = confirmOrderService.queryLineCount(id);

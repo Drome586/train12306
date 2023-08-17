@@ -102,9 +102,12 @@ public class TrainSeatService {
                     trainSeat.setId(SnowUtil.getSnowflakeNextId());
                     trainSeat.setTrainCode(trainCode);
                     trainSeat.setCarriageIndex(trainCarriage.getIndex());
+                    //座位用两位展示，够两位就不填充，不够的话前面补0
                     trainSeat.setRow(StrUtil.fillBefore(String.valueOf(row),'0',2));
+                    // A B C   E F
                     trainSeat.setCol(seatColEnum.getCode());
                     trainSeat.setSeatType(seatType);
+                    //座位索引
                     trainSeat.setCarriageSeatIndex(seatIndex++);
                     trainSeat.setCreateTime(now);
                     trainSeat.setUpdateTime(now);

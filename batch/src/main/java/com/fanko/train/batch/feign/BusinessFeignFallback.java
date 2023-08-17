@@ -12,6 +12,7 @@ public class BusinessFeignFallback implements BusinessFeign{
         return "Fallback";
     }
 
+    //熔断降级之后的补偿措施。处理方法。
     @Override
     public CommonResp<Object> genDaily(Date date) {
         return null;

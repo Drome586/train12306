@@ -66,6 +66,14 @@ public class ConfirmOrderService {
     @Autowired
     private SkTokenService skTokenService;
 
+    /*
+    passengerId:213
+    passengerType:"1"
+    passengerName:"张三"
+    passengerCard:"123456"
+    没选座位的时候，默认是空。
+    seat:"C1"
+     */
     public void save(ConfirmOrderDoReq req) {
 
 
@@ -166,6 +174,7 @@ public class ConfirmOrderService {
 //                LOG.info("很遗憾，没有抢到锁");
 //                throw new BusinessException(BusinessExceptionEnum.CONFIRM_ORDER_LOCK_FAIL);
                 LOG.info("没有抢到锁,有其他消费线程正在出票，不做任何处理");
+                //没拿到锁直接退出去
                 return;
             }
 
@@ -212,6 +221,7 @@ public class ConfirmOrderService {
             LOG.info("购票流程结束，释放锁!");
             // try finally 不能包含加锁的那段代码
 //            redisTemplate.delete(lockKey);
+            //只有当前线程才能去释放锁。
             if (null != lock && lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }
@@ -282,7 +292,8 @@ public class ConfirmOrderService {
             // 查出本次选座的座位类型都有哪些列，用于计算所选座位与第一个座位的偏移值。
             List<SeatColEnum> colEnumList = SeatColEnum.getColsByType(ticketReq0.getSeatTypeCode());
             LOG.info("本次选座的座位类型包含的列：{}", colEnumList);
-            // 组成和前端两排选座一样的列表，用于作参照的座位列表，例：referSeatList = {A1,C1,D1,F1,A2,C2,D2,F2}
+            // 初始化组成和前端两排选座一样的列表，用于作参照的座位列表，例：referSeatList = {A1,C1,D1,F1,
+            //                                                              A2,C2,D2,F2}
             List<String> referSeatList = new ArrayList<>();
             for (int i = 1; i <= 2; i++) {
                 for (SeatColEnum seatColEnum : colEnumList) {
@@ -292,25 +303,30 @@ public class ConfirmOrderService {
             LOG.info("用于作参照的两排座位：{}", referSeatList);
 
             List<Integer> offsetList = new ArrayList<>();
-            // 绝对偏移值：即：在参照座位列表中的位置
+            // 绝对偏移值：即：在参照座位列表中的位置，就是索引号
             List<Integer> aboluteOffsetList = new ArrayList<>();
             for (ConfirmOrderTicketReq ticketReq : tickets) {
                 int index = referSeatList.indexOf(ticketReq.getSeat());
                 aboluteOffsetList.add(index);
             }
             LOG.info("计算得到所有座位的绝对偏移值：{}", aboluteOffsetList);
+
             for (Integer index : aboluteOffsetList) {
                 Integer offset = index - aboluteOffsetList.get(0);
                 offsetList.add(offset);
             }
+            //{A1,C1,D1,F1,
+            // A2,C2,D2,F2}
             LOG.info("计算得到所有座位的相对第一个座位的偏移值：{}", offsetList);
+            //选座之后开始调座位。需要用到偏移量，因为ticketReq0.getSeatTypeCode()是同类的座位类型才可以挑选座位，所以只拿第一个就行了。
             getSeat(finalSeatList, date, trainCode, ticketReq0.getSeatTypeCode(),
-                    ticketReq0.getSeat().split("")[0], // 从A1得到A
+                    ticketReq0.getSeat().split("")[0], // 从A1得到A，因为座位只有ACDF类型，
                     offsetList,
-                    dailyTrainTicket.getStartIndex(),
-                    dailyTrainTicket.getEndIndex());
+                    dailyTrainTicket.getStartIndex(),//起始站
+                    dailyTrainTicket.getEndIndex());//终点站
         } else {
             LOG.info("本次购票没有选座");
+            //循环挑座位，只要有座位就行，一张一张的挑
             for (ConfirmOrderTicketReq ticketReq : tickets) {
                 getSeat(finalSeatList,
                         date,
@@ -334,11 +350,13 @@ public class ConfirmOrderService {
     /*
     挑座位,如果有选座，则一次性挑完，如果无选座，则一个一个挑*/
     // 选座
-    // 一个车箱一个车箱的获取座位数据
+    // 一个车箱一个车箱的获取座位数据。先把例如一等座的车厢跳出来
     // 挑选符合条件的座位，如果这个车箱不满足，则进入下个车箱（多个选座应该在同一个车厢）
+    //column  拿到列值（很重要）
     private void getSeat(List<DailyTrainSeat> finalSeatList, Date date, String trainCode, String seatType,
                          String column, List<Integer> offsetList, Integer startIndex, Integer endIndex) {
         List<DailyTrainSeat> getSeatList = new ArrayList<>();
+        //去查出所有指定座位类型的车厢。
         List<DailyTrainCarriage> carriageList = dailyTrainCarriageService.selectBySeatType(date, trainCode, seatType);
         LOG.info("共查出{}个符合条件的车厢", carriageList.size());
 
@@ -346,12 +364,16 @@ public class ConfirmOrderService {
         for (DailyTrainCarriage dailyTrainCarriage : carriageList) {
             LOG.info("开始从车厢{}选座", dailyTrainCarriage.getIndex());
             getSeatList = new ArrayList<>();
+            //从车厢里挑选出所有的座位。
             List<DailyTrainSeat> seatList = dailyTrainSeatService
                     .selectByCarriage(date, trainCode, dailyTrainCarriage.getIndex());
             LOG.info("车厢{}的座位数:{}", dailyTrainCarriage.getIndex(), seatList.size());
+
+
             for (int i = 0; i < seatList.size(); i++) {
                 DailyTrainSeat dailyTrainSeat = seatList.get(i);
                 String col = dailyTrainSeat.getCol();
+                //座位号
                 Integer seatIndex = dailyTrainSeat.getCarriageSeatIndex();
                 // 判断当前座位未被选中过
                 boolean alreadyChooseFlag = false;
@@ -362,6 +384,7 @@ public class ConfirmOrderService {
                         break;
                     }
                 }
+                //如果已经被选中了，不能重复进行选，继续遍历下一个座位。
                 if (alreadyChooseFlag) {
                     continue;
                 }
@@ -413,10 +436,11 @@ public class ConfirmOrderService {
                     }
                 }
                 if (!isGetAllOffsetSeat) {
+                    //没选中的话清空List
                     getSeatList = new ArrayList<>();
                     continue;
                 }
-                // 保存选好的座位
+                // 保存选好的座位[[],[]]，选好的结果。
                 finalSeatList.addAll(getSeatList);
                 return;
             }
@@ -424,15 +448,17 @@ public class ConfirmOrderService {
     }
 
     /*
-    计算某座位在区间内是否可卖
+    计算某座位在区间内是否可卖，该座位的售卖情况
+            A B C D E F
     例：sell=10001，本次购买区间站1~4,则区间已售000
     全部是0，表示区间可买：只要有1，就表示区间内已售过票
     *
     选中后，要计算购票后的sell，比如原来是10001，本次购买区间站是1~4
     方案：构造本次购票造成的售卖信息01110，和原sell10001按位或，最终得到11111
+    startIndex表示要出发的起始车站，endIndex表示终点车站
     */
     private boolean calSell(DailyTrainSeat dailyTrainSeat, Integer startIndex, Integer endIndex) {
-        // 10001 , 00000
+        // 00001 , 00000
         String sell = dailyTrainSeat.getSell();
         // 000, 000
         String sellPart = sell.substring(startIndex, endIndex);
@@ -444,19 +470,20 @@ public class ConfirmOrderService {
         } else {
             LOG.info("座位{}在本次车站区间{}~{}未售过票，可选中该座位",
                     dailyTrainSeat.getCarriageSeatIndex(), startIndex, endIndex);
-            // 111, 111
+            //  111    111 把卖出去的座位直接都换成1
             String curSell = sellPart.replace('0', '1');
-            // 0111, 0111
+            //开始拼接左边的0
+            //  0111   0111 endIndex是拼完之后最终是几位
             curSell = StrUtil.fillBefore(curSell, '0', endIndex);
-            // 01110, 01110
+            //  01110  01110
             curSell = StrUtil.fillAfter(curSell, '0', sell.length());
             // 当前区间售票信息curSell 01110 与库里的已售信息 10001 00000  按位或，即可得到该座位卖出此票后的售票详情
-            // 31(11111) 14(01110)
+            // 15(01111) 14(01110)
             int newSellInt = NumberUtil.binaryToInt(curSell) | NumberUtil.binaryToInt(sell);
-            // 11111 , 1110
             String newSell = NumberUtil.getBinaryStr(newSellInt);
-            // 11111, 01110
+            // 1111,   1110   所以要补0。
             newSell = StrUtil.fillBefore(newSell, '0', sell.length());
+            //最终01111   01110
             LOG.info("座位{}被选中，原售票信息:{}，车站区间{}~{}，即{}，最终售票信息：{}",
                     dailyTrainSeat.getCarriageSeatIndex(), sell, startIndex, endIndex, curSell, newSell);
             dailyTrainSeat.setSell(newSell);
@@ -465,7 +492,7 @@ public class ConfirmOrderService {
 
     }
 
-
+    //预减库存
     private static void reduceTickets(ConfirmOrderDoReq req, DailyTrainTicket dailyTrainTicket) {
         for (ConfirmOrderTicketReq ticketReq : req.getTickets()) {
             String seatTypeCode = ticketReq.getSeatTypeCode();

@@ -121,6 +121,9 @@ public class DailyTrainTicketService {
         dailyTrainTicketMapper.deleteByPrimaryKey(id);
     }
 
+    /*
+    这里计算的都是初始的值。
+     */
     @Transactional
     public void genDaily(DailyTrain dailyTrain, Date date, String trainCode) {
         LOG.info("生成日期【{}】 车次【{}】的余票信息 开始", DateUtil.formatDate(date), trainCode);
@@ -161,9 +164,10 @@ public class DailyTrainTicketService {
                 dailyTrainTicket.setEndIndex(trainStationEnd.getIndex());
                 int ydz = dailyTrainSeatService.countSeat(date, trainCode, SeatTypeEnum.YDZ.getCode());
                 int edz = dailyTrainSeatService.countSeat(date, trainCode, SeatTypeEnum.EDZ.getCode());
+                //如果是-1的话，就是没有票。不能用0表示
                 int rw = dailyTrainSeatService.countSeat(date, trainCode, SeatTypeEnum.RW.getCode());
                 int yw = dailyTrainSeatService.countSeat(date, trainCode, SeatTypeEnum.YW.getCode());
-                //票价=里程之和 * 座位单价 * 车次类型系数
+                //票价=里程之和 * 座位单价 * 车次类型系数  AB 里程用B表示
                 String type = dailyTrain.getType();
                 //计算票价系数
                 BigDecimal priceRate = EnumUtil.getFieldBy(TrainTypeEnum::getPriceRate, TrainTypeEnum::getCode, type);

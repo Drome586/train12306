@@ -2,7 +2,7 @@
   <a-row class="login">
     <a-col :span="8" :offset="8" class="login-main">
       <h1 style="text-align: center">
-        <rocket-two-tone/>&nbsp;繁空12306售票系统
+        <rocket-two-tone/>&nbsp;12306高性能售票系统
       </h1>
       <a-form
           :model="loginForm"

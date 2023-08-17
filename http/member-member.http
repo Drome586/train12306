@@ -6,14 +6,14 @@ token: 123
 POST http://localhost:8000/member/member/register
 Content-Type: application/x-www-form-urlencoded
 
-mobile=142623
+mobile=17852846895
 
 ###
 POST http://localhost:8000/member/member/send-code
 Content-Type: application/json
 
 {
-  "mobile": "14262321465"
+  "mobile": "17852846895"
 }
 
 ###
@@ -21,7 +21,7 @@ POST http://localhost:8000/member/member/login
 Content-Type: application/json
 
 {
-  "mobile": "13000000000",
+  "mobile": "17852846895",
   "code": "8888"
 }
 

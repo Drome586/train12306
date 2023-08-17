@@ -31,12 +31,15 @@ public class LogAspect {
     private final static Logger LOG = LoggerFactory.getLogger(LogAspect.class);
 
     /**
-     * 定义一个切点
+     * 定义一个切点,写的这个类在哪里起作用，切入点在哪里对应的切点。
+     * * 表示所有的返回值，有无都可以，下面是子包。*Controller表示所有的controller，.* 任何方法  （..)任意的参数。
      */
     @Pointcut("execution(public * com.fanko..*Controller.*(..))")
     public void controllerPointcut() {
     }
-
+    /*
+    在进入到切点之前打印日志
+     */
     @Before("controllerPointcut()")
     public void doBefore(JoinPoint joinPoint) {
 
@@ -75,7 +78,9 @@ public class LogAspect {
         excludefilter.addExcludes(excludeProperties);
         LOG.info("请求参数: {}", JSONObject.toJSONString(arguments, excludefilter));
     }
-
+    /*
+    环绕通知，打印出请求结果
+     */
     @Around("controllerPointcut()")
     public Object doAround(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
         long startTime = System.currentTimeMillis();

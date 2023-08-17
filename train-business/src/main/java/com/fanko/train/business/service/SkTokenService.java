@@ -120,6 +120,7 @@ public class SkTokenService {
     public boolean validSkToken(Date date, String trainCode, Long memberId) {
         LOG.info(" 会员【{}】获取日期【{}】车次【{}】的令牌开始", memberId, DateUtil.formatDate(date), trainCode);
         if (!env.equals("dev")) {
+            //如果是同一个同一个时间不断的刷票的话，这个锁会有一个时间的限制的，就防止了机器人刷票。
             // 先获取令牌锁，再校验令牌余量，防止机器人刷票，lockKey就是令牌，用来表示【谁能做什么】的一个凭证
             String lockKey = RedisKeyPreEnum.SK_TOKEN + "-" + DateUtil.formatDate(date) + "-" + trainCode + "-" + memberId;
             Boolean setIfAbsent = redisTemplate.opsForValue().setIfAbsent(lockKey, lockKey, 5, TimeUnit.SECONDS);
@@ -130,7 +131,7 @@ public class SkTokenService {
                 return false;
             }
         }
-
+        //优化令牌锁。
         String skTokenCountKey = RedisKeyPreEnum.SK_TOKEN_COUNT + DateUtil.formatDate(date) + "-" + trainCode;
         Object skTokenCount = redisTemplate.opsForValue().get(skTokenCountKey);
         if (skTokenCount != null) {
@@ -174,7 +175,7 @@ public class SkTokenService {
             return true;
         }
 
-        // 令牌数约等于库存，令牌没有了，就不再卖票，不需要再进入购票主流程去判断库存
+        // 令牌数约等于库存，令牌没有了，就不再卖票，不需要再进入购票主流程去判断库存，后续如果确实还有库存可以增加令牌
 //        int updateCount = skTokenMapperCust.decrease(date, trainCode, 1);
 //        return updateCount > 0;
 

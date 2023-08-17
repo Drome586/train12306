@@ -68,6 +68,7 @@ public class AfterConfirmOrderService {
                                ConfirmOrder confirmOrder) throws Exception {
 //        LOG.info("seata全局事务ID：{}", RootContext.getXID());
         for (int j = 0; j < finalSeatList.size(); j++) {
+            //只更新sell 列
             DailyTrainSeat dailyTrainSeat = finalSeatList.get(j);
             DailyTrainSeat seatForUpdate = new DailyTrainSeat();
             seatForUpdate.setId(dailyTrainSeat.getId());
@@ -78,13 +79,14 @@ public class AfterConfirmOrderService {
             // 计算这个站卖出去后，影响了哪些站的余票库存
             // 参照2~3节 如何保证不超卖、不少卖，还要承受极高的并发 10：30左右
             // 影响的库存：本次选座之前 没卖过票的，和本次够买的区间有交集的区间
-            // 假设10个站，本次买4~7站
-            // 原售：001000001
-            // 购买：000011100
-            // 新售：001011101
+            // 假设10个站，本次买4~7站，站是从0开始
+            // 原售：001000001             E:start  H:end
+            // 购买：000011100     A B C D E F G H I J
+            // 新售：001011101      0 0 1 0 1 1 1 0 1
             // 影响：XXX11111X
 //            Integer startIndex = 4;
 //            Integer endIndex = 7;
+            //影响的区间，在哪里开始会受影响，在哪里结束会受影响 start在缝隙里
 //            Integer minStartIndex = startIndex - 往前碰到的最后一个0;
 //            Integer maxStartIndex = endIndex - 1;
 //            Integer minEndIndex = startIndex + 1;

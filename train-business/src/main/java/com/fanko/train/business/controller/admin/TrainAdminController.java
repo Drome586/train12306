@@ -45,6 +45,9 @@ public class TrainAdminController {
         List<TrainQueryResp> list = trainService.queryAll();
         return new CommonResp<>(list);
     }
+    /*
+    根据车次生成座位，获取到车次编号，然后遍历火车车厢模块的排数，跟列数去自动生成座位
+     */
     @GetMapping("/gen-seat/{trainCode}")
     public CommonResp<Object> genSeat(@PathVariable String trainCode) {
         trainSeatService.genTrainSeat(trainCode);

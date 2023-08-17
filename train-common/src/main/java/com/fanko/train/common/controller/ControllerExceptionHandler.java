@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
  * 统一异常处理、数据预处理等
+ * 该注解监控controller，只要controller出现异常就会被捕获，然后进行处理，返回统一异常处理结果
  */
 @ControllerAdvice
 public class ControllerExceptionHandler {

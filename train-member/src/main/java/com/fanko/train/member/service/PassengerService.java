@@ -32,12 +32,14 @@ public class PassengerService {
     public void save(PassengerSaveReq req) {
         DateTime now = DateTime.now();
         Passenger passenger = BeanUtil.copyProperties(req, Passenger.class);
+        //判断时编辑还是新增乘客
         if (ObjectUtil.isNull(passenger.getId())){
             passenger.setMemberId(LoginMemberContext.getId());
             passenger.setId(SnowUtil.getSnowflakeNextId());
             passenger.setCreateTime(now);
             passenger.setUpdateTime(now);
             passengerMapper.insert(passenger);
+            //不是空的话就是新增
         }else {
             passenger.setUpdateTime(now);
             passengerMapper.updateByPrimaryKey(passenger);
